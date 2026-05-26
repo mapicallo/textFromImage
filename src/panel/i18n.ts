@@ -31,7 +31,10 @@ const strings = {
     sourceFile: 'Archivo local',
     sourceClipboard: 'Portapapeles',
     privacy: 'Política de privacidad',
-    by: 'by AI4Context',
+    brandBy: 'por',
+    brandSupport: 'Apoyar',
+    brandSupportAria: 'Apoyar AI4Context',
+    brandAria: 'AI4Context — abrir sitio web',
   },
   en: {
     title: 'TextFromImage',
@@ -62,7 +65,10 @@ const strings = {
     sourceFile: 'Local file',
     sourceClipboard: 'Clipboard',
     privacy: 'Privacy policy',
-    by: 'by AI4Context',
+    brandBy: 'by',
+    brandSupport: 'Support',
+    brandSupportAria: 'Support AI4Context',
+    brandAria: 'AI4Context — open website',
   },
 } as const;
 

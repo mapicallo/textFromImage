@@ -260,6 +260,16 @@ export default function App() {
           <h1>{t(locale, 'title')}</h1>
           <p className="subtitle">{t(locale, 'subtitle')}</p>
           <p className="app-version">v{getExtensionVersion()}</p>
+          <p className="header-privacy">
+            <a
+              className="link"
+              href={chrome.runtime.getURL('privacy.html')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t(locale, 'privacy')}
+            </a>
+          </p>
         </header>
 
         <div className="lang-bar">
@@ -371,18 +381,41 @@ export default function App() {
         )}
       </div>
 
-      <footer className="footer">
-        <img src={getBrandMarkUrl()} alt="" className="footer-mark" width={22} height={22} />
-        <span>
-          {t(locale, 'by')}{' '}
-          <a href="https://ai4context.com" target="_blank" rel="noopener noreferrer">
-            AI4Context
-          </a>
-          ·{' '}
-          <a href={chrome.runtime.getURL('privacy.html')} target="_blank" rel="noopener noreferrer">
-            {t(locale, 'privacy')}
-          </a>
-        </span>
+      <footer className="a4c-brand-footer-strip">
+        <div className="a4c-brand-footer a4c-brand-footer--ghost">
+          <span className="a4c-brand-footer__accent" aria-hidden="true" />
+          <img
+            className="a4c-brand-footer__mark"
+            src={getBrandMarkUrl()}
+            width={22}
+            height={22}
+            alt=""
+          />
+          <span className="a4c-brand-footer__copy">
+            <span className="a4c-brand-footer__by">{t(locale, 'brandBy')}</span>
+            <a
+              className="a4c-brand-footer__name"
+              href="https://ai4context.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t(locale, 'brandAria')}
+            >
+              AI4Context
+            </a>
+            <span className="a4c-brand-footer__separator" aria-hidden="true">
+              |
+            </span>
+            <a
+              className="a4c-brand-footer__support"
+              href="https://ai4context.com/mission-support"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t(locale, 'brandSupportAria')}
+            >
+              {t(locale, 'brandSupport')}
+            </a>
+          </span>
+        </div>
       </footer>
     </div>
   );

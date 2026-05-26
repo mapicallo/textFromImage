@@ -52,9 +52,23 @@ body {
 }
 
 .app-version {
-  margin: 0.2rem 0 0.6rem;
+  margin: 0.2rem 0 0;
   font-size: 0.72rem;
   color: var(--muted);
+}
+
+.header-privacy {
+  margin: 0.15rem 0 0.6rem;
+  font-size: 0.72rem;
+}
+
+.header-privacy .link {
+  color: var(--accent2);
+  text-decoration: none;
+}
+
+.header-privacy .link:hover {
+  text-decoration: underline;
 }
 
 .lang-bar {
@@ -232,25 +246,105 @@ body {
   cursor: text;
 }
 
-.footer {
+/* AI4Context brand footer (shared with AI4DebateRoles, Monitor your AI, …) */
+.a4c-brand-footer-strip {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 14px;
+  margin-top: auto;
+  padding: 10px 14px 12px;
   border-top: 1px solid var(--border);
-  font-size: 0.72rem;
-  color: var(--muted);
-  background: var(--panel);
+  background: #0e1520;
 }
 
-.footer a {
-  color: var(--accent2);
+.a4c-brand-footer {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  box-sizing: border-box;
+  background: #0e1520;
+  color: var(--text);
+  text-decoration: none;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.2;
+  border-radius: 0;
+  max-width: 100%;
+}
+
+.a4c-brand-footer a:focus-visible {
+  outline: 2px solid #f5b84a;
+  outline-offset: 2px;
+}
+
+.a4c-brand-footer__accent {
+  width: 3px;
+  align-self: stretch;
+  min-height: 22px;
+  background: #3dd9c0;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.a4c-brand-footer__mark {
+  height: 22px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+}
+
+.a4c-brand-footer__copy {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.a4c-brand-footer__by {
+  font-size: 13px;
+  font-weight: 400;
+  color: #8b9bb5;
+}
+
+.a4c-brand-footer__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e8eef7;
   text-decoration: none;
 }
 
-.footer a:hover { text-decoration: underline; }
+.a4c-brand-footer__name:hover,
+.a4c-brand-footer__support:hover {
+  text-decoration: underline;
+}
 
-.footer-mark { opacity: 0.9; }
+.a4c-brand-footer__separator {
+  color: #4b5563;
+  margin: 0 2px;
+}
+
+.a4c-brand-footer__support {
+  color: #f5b84a;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.a4c-brand-footer--ghost {
+  background: transparent;
+  padding: 6px 0;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.a4c-brand-footer--ghost .a4c-brand-footer__by {
+  color: var(--muted);
+}
+
+.a4c-brand-footer--ghost .a4c-brand-footer__name {
+  color: var(--text);
+}
+
+.a4c-brand-footer--ghost .a4c-brand-footer__support {
+  color: #f5b84a;
+}
 
 .crop-on { color: var(--accent2); }
