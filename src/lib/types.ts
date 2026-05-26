@@ -1,5 +1,4 @@
 export type UiLocale = 'es' | 'en';
-export type OcrLang = 'eng' | 'spa';
 
 export type PendingImagePayload = {
   dataUrl: string;

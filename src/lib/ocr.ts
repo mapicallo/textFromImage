@@ -1,11 +1,13 @@
-import type { OcrLang, OcrResult } from './types';
+import type { OcrResult } from './types';
 import { preprocessBlobForOcr } from './imagePreprocess';
 import { buildTextFromOcrBlocks } from './ocrPostprocess';
+
+/** Bundled traineddata: English + Spanish (no user-facing language picker). */
+const OCR_LANGS = ['eng', 'spa'] as const;
 
 type WorkerHandle = Awaited<ReturnType<typeof import('tesseract.js').createWorker>>;
 
 let workerPromise: Promise<WorkerHandle> | null = null;
-let workerLang: OcrLang | null = null;
 let progressCb: ((p: number) => void) | undefined;
 
 function tessBase(): string {
@@ -21,19 +23,12 @@ async function configureWorker(worker: WorkerHandle): Promise<void> {
   });
 }
 
-async function getWorker(lang: OcrLang): Promise<WorkerHandle> {
-  if (workerPromise && workerLang === lang) return workerPromise;
-
-  if (workerPromise) {
-    const w = await workerPromise;
-    await w.terminate();
-    workerPromise = null;
-  }
+async function getWorker(): Promise<WorkerHandle> {
+  if (workerPromise) return workerPromise;
 
   const { createWorker } = await import('tesseract.js');
-  workerLang = lang;
   workerPromise = (async () => {
-    const worker = await createWorker(lang, 1, {
+    const worker = await createWorker([...OCR_LANGS], 1, {
       workerPath: `${tessBase()}worker.min.js`,
       corePath: tessBase(),
       langPath: `${tessBase()}lang`,
@@ -53,12 +48,11 @@ async function getWorker(lang: OcrLang): Promise<WorkerHandle> {
 
 export async function runOcr(
   image: Blob,
-  lang: OcrLang,
   onProgress?: (progress: number) => void
 ): Promise<OcrResult> {
   progressCb = onProgress;
   try {
-    const worker = await getWorker(lang);
+    const worker = await getWorker();
     const prepared = await preprocessBlobForOcr(image);
     const { data } = await worker.recognize(prepared, {}, { blocks: true });
     const rawText = (data.text ?? '').trim();
@@ -75,7 +69,6 @@ export async function terminateOcrWorker(): Promise<void> {
     const w = await workerPromise;
     await w.terminate();
     workerPromise = null;
-    workerLang = null;
   }
 }
 

@@ -1,16 +1,17 @@
-import type { OcrLang, UiLocale } from '../lib/types';
-import { OCR_LANG_KEY, UI_LOCALE_KEY } from '../lib/storageKeys';
+import type { UiLocale } from '../lib/types';
+import { UI_LOCALE_KEY } from '../lib/storageKeys';
 
 const strings = {
   es: {
     title: 'TextFromImage',
-    subtitle: 'Extrae texto de imágenes en tu dispositivo',
+    subtitle: 'Extrae texto de imágenes en tu dispositivo (español e inglés)',
     dropHint: 'Arrastra una imagen aquí o elige un archivo',
     chooseFile: 'Elegir archivo',
     pasteHint: 'También puedes pegar una imagen (Ctrl+V)',
-    cropHint: 'Arrastra sobre la imagen para recortar (opcional)',
-    cropApply: 'Usar recorte',
+    cropHint: 'Arrastra sobre la imagen para marcar el área a leer (el recorte se aplica al soltar).',
+    cropApply: 'Confirmar recorte',
     cropReset: 'Imagen completa',
+    cropActive: '✓ Recorte activo — Extraer texto usará solo esa zona',
     extract: 'Extraer texto',
     extracting: 'Extrayendo…',
     copy: 'Copiar',
@@ -23,8 +24,6 @@ const strings = {
     loadError: 'No se pudo cargar la imagen.',
     loadingWeb: 'Cargando imagen de la web…',
     webError: 'No se pudo acceder a la imagen del sitio. Descárgala y súbela aquí.',
-    ocrLang: 'OCR',
-    ocrLangHint: 'Texto en español: elige OCR ES. Recorta solo el bloque de texto si hace falta.',
     langEn: 'English',
     langEs: 'Español',
     uiLang: 'UI',
@@ -36,13 +35,14 @@ const strings = {
   },
   en: {
     title: 'TextFromImage',
-    subtitle: 'Extract text from images on your device',
+    subtitle: 'Extract text from images on your device (Spanish and English)',
     dropHint: 'Drop an image here or choose a file',
     chooseFile: 'Choose file',
     pasteHint: 'You can also paste an image (Ctrl+V)',
-    cropHint: 'Drag on the image to crop (optional)',
-    cropApply: 'Use crop',
+    cropHint: 'Drag on the image to mark the text area (crop applies when you release).',
+    cropApply: 'Confirm crop',
     cropReset: 'Full image',
+    cropActive: '✓ Crop active — Extract text will use that area only',
     extract: 'Extract text',
     extracting: 'Extracting…',
     copy: 'Copy',
@@ -55,8 +55,6 @@ const strings = {
     loadError: 'Could not load the image.',
     loadingWeb: 'Loading image from the web…',
     webError: 'Could not access the image from this site. Download it and upload here.',
-    ocrLang: 'OCR',
-    ocrLangHint: 'Spanish text: pick OCR ES. Crop to the text block if needed.',
     langEn: 'English',
     langEs: 'Spanish',
     uiLang: 'UI',
@@ -82,13 +80,4 @@ export async function loadLocale(): Promise<UiLocale> {
 
 export async function saveLocale(locale: UiLocale): Promise<void> {
   await chrome.storage.local.set({ [UI_LOCALE_KEY]: locale });
-}
-
-export async function loadOcrLang(): Promise<OcrLang> {
-  const data = await chrome.storage.local.get(OCR_LANG_KEY);
-  return data[OCR_LANG_KEY] === 'spa' ? 'spa' : 'eng';
-}
-
-export async function saveOcrLang(lang: OcrLang): Promise<void> {
-  await chrome.storage.local.set({ [OCR_LANG_KEY]: lang });
 }

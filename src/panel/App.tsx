@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CropRect, OcrLang, PendingImagePayload, UiLocale } from '../lib/types';
+import type { CropRect, PendingImagePayload, UiLocale } from '../lib/types';
 import { getBrandMarkUrl } from '../lib/brandMarkUrl';
 import { getExtensionVersion } from '../lib/extensionVersion';
 import {
@@ -16,9 +16,7 @@ import {
 import { PENDING_IMAGE_KEY, RESULT_TEXT_HEIGHT_KEY } from '../lib/storageKeys';
 import {
   loadLocale,
-  loadOcrLang,
   saveLocale,
-  saveOcrLang,
   t,
 } from './i18n';
 import CropCanvas from './CropCanvas';
@@ -31,7 +29,6 @@ export default function App() {
   const fileRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLTextAreaElement>(null);
   const [locale, setLocale] = useState<UiLocale>('es');
-  const [ocrLang, setOcrLang] = useState<OcrLang>('eng');
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [sourceKind, setSourceKind] = useState<PendingImagePayload['source'] | null>(null);
@@ -87,7 +84,6 @@ export default function App() {
   useEffect(() => {
     void (async () => {
       setLocale(await loadLocale());
-      setOcrLang(await loadOcrLang());
       const pending = await send<PendingImagePayload | null>({ type: MSG_GET_PENDING_IMAGE });
       if (pending) await applyPendingPayload(pending, !pending.loading);
     })();
@@ -139,10 +135,11 @@ export default function App() {
     await saveLocale(l);
   };
 
-  const onOcrLang = async (l: OcrLang) => {
-    setOcrLang(l);
-    await saveOcrLang(l);
-  };
+  const handleCropChange = useCallback((rect: CropRect | null) => {
+    setCropRect(rect);
+    if (rect) setUseCrop(true);
+    else setUseCrop(false);
+  }, []);
 
   const ingestBlob = async (blob: Blob, source: PendingImagePayload['source'], label?: string) => {
     if (!isImageMime(blob.type)) {
@@ -200,7 +197,7 @@ export default function App() {
       if (useCrop && cropRect) {
         blob = await cropBlobToBlob(blob, cropRect);
       }
-      const { text, confidence } = await runOcr(blob, ocrLang, setProgress);
+      const { text, confidence } = await runOcr(blob, setProgress);
       const kind = classifyOcrOutput(text, confidence);
       if (kind === 'empty') {
         setStatus('empty');
@@ -273,15 +270,7 @@ export default function App() {
           <button type="button" className={locale === 'en' ? 'lang-on' : ''} onClick={() => void onLocale('en')}>
             EN
           </button>
-          <span className="lang-label ocr-label">{t(locale, 'ocrLang')}</span>
-          <button type="button" className={ocrLang === 'eng' ? 'lang-on' : ''} onClick={() => void onOcrLang('eng')}>
-            EN
-          </button>
-          <button type="button" className={ocrLang === 'spa' ? 'lang-on' : ''} onClick={() => void onOcrLang('spa')}>
-            ES
-          </button>
         </div>
-        <p className="hint subtle ocr-hint">{t(locale, 'ocrLangHint')}</p>
 
         {!dataUrl ? (
           <div
@@ -305,11 +294,11 @@ export default function App() {
               </p>
             )}
             <p className="hint subtle">{t(locale, 'cropHint')}</p>
-            <CropCanvas dataUrl={dataUrl} onCropChange={setCropRect} />
+            <CropCanvas dataUrl={dataUrl} cropRect={cropRect} onCropChange={handleCropChange} />
             <div className="actions row">
               <button
                 type="button"
-                className="btn"
+                className={`btn${useCrop && cropRect ? ' btn--primary' : ''}`}
                 disabled={!cropRect}
                 onClick={() => setUseCrop(true)}
               >
@@ -326,7 +315,7 @@ export default function App() {
                 {t(locale, 'cropReset')}
               </button>
             </div>
-            {useCrop && cropRect && <p className="hint subtle crop-on">✓ crop</p>}
+            {useCrop && cropRect && <p className="hint subtle crop-on">{t(locale, 'cropActive')}</p>}
             <div className="actions">
               <button type="button" className="btn btn--primary" disabled={busy} onClick={() => void onExtract()}>
                 {busy ? t(locale, 'extracting') : t(locale, 'extract')}

@@ -3,6 +3,7 @@ import type { CropRect } from '../lib/types';
 
 type Props = {
   dataUrl: string;
+  cropRect: CropRect | null;
   onCropChange: (rect: CropRect | null) => void;
 };
 
@@ -12,7 +13,7 @@ function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
 }
 
-export default function CropCanvas({ dataUrl, onCropChange }: Props) {
+export default function CropCanvas({ dataUrl, cropRect, onCropChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [displaySize, setDisplaySize] = useState({ w: 0, h: 0 });
   const [dragging, setDragging] = useState(false);
@@ -97,6 +98,13 @@ export default function CropCanvas({ dataUrl, onCropChange }: Props) {
     const x2 = Math.max(start.x, current.x) * displaySize.w;
     const y2 = Math.max(start.y, current.y) * displaySize.h;
     overlay = { left: x1, top: y1, width: x2 - x1, height: y2 - y1 };
+  } else if (cropRect && displaySize.w) {
+    overlay = {
+      left: cropRect.x * displaySize.w,
+      top: cropRect.y * displaySize.h,
+      width: cropRect.w * displaySize.w,
+      height: cropRect.h * displaySize.h,
+    };
   }
 
   return (
