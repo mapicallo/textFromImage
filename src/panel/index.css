@@ -1,0 +1,243 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2332;
+  --text: #e7edf5;
+  --muted: #8b9cb3;
+  --accent: #38bdf8;
+  --accent2: #34d399;
+  --danger: #f87171;
+  --border: #2d3b50;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-width: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+#root, .app-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-inner {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px 16px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.app-version {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.lang-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.lang-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.ocr-label { margin-left: 0.5rem; }
+
+.lang-bar button {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  min-width: 2rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lang-bar button.lang-on {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(26, 35, 50, 0.5);
+}
+
+.dropzone:hover {
+  border-color: var(--accent);
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.hint.subtle { margin-top: 0.5rem; }
+
+.source-line { margin: 0 0 0.35rem; word-break: break-all; }
+
+.crop-wrap {
+  position: relative;
+  margin: 0.5rem 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.crop-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.crop-overlay {
+  position: absolute;
+  border: 2px solid var(--accent2);
+  background: rgba(52, 211, 153, 0.15);
+  pointer-events: none;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.actions.row { margin-top: 0.35rem; }
+
+.btn {
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.progress {
+  height: 4px;
+  background: var(--panel);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent2);
+  transition: width 0.15s;
+}
+
+.status {
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.status--empty,
+.status--low_quality {
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.status--error {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fecaca;
+}
+
+.result-block {
+  margin-top: 0.75rem;
+}
+
+.result-block h2 {
+  font-size: 0.9rem;
+  margin: 0 0 0.35rem;
+}
+
+.result-text {
+  width: 100%;
+  resize: vertical;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--panel);
+}
+
+.footer a {
+  color: var(--accent2);
+  text-decoration: none;
+}
+
+.footer a:hover { text-decoration: underline; }
+
+.footer-mark { opacity: 0.9; }
+
+.crop-on { color: var(--accent2); }
