@@ -72,6 +72,10 @@ body {
 
 .ocr-label { margin-left: 0.5rem; }
 
+.ocr-hint {
+  margin: -0.35rem 0 0.75rem;
+}
+
 .lang-bar button {
   padding: 0.2rem 0.45rem;
   font-size: 0.72rem;

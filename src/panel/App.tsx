@@ -281,6 +281,7 @@ export default function App() {
             ES
           </button>
         </div>
+        <p className="hint subtle ocr-hint">{t(locale, 'ocrLangHint')}</p>
 
         {!dataUrl ? (
           <div
