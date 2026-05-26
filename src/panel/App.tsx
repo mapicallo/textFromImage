@@ -13,6 +13,7 @@ import {
   MSG_CLEAR_PENDING_IMAGE,
   MSG_GET_PENDING_IMAGE,
 } from '../lib/messages';
+import { PENDING_IMAGE_KEY, RESULT_TEXT_HEIGHT_KEY } from '../lib/storageKeys';
 import {
   loadLocale,
   loadOcrLang,
@@ -28,6 +29,7 @@ function send<T>(msg: { type: string }): Promise<T> {
 
 export default function App() {
   const fileRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLTextAreaElement>(null);
   const [locale, setLocale] = useState<UiLocale>('es');
   const [ocrLang, setOcrLang] = useState<OcrLang>('eng');
   const [dataUrl, setDataUrl] = useState<string | null>(null);
@@ -41,35 +43,96 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const loadImagePayload = useCallback(async (payload: PendingImagePayload) => {
-    if (payload.error) {
-      setDataUrl(null);
-      setStatus('error');
-      setStatusMsg(payload.error.includes('permission') ? t(locale, 'webError') : payload.error);
-      return;
-    }
-    if (!payload.dataUrl) return;
-    setDataUrl(payload.dataUrl);
-    setSourceKind(payload.source);
-    setSourceLabel(payload.sourceLabel ?? null);
-    setResult(null);
-    setStatus('idle');
-    setStatusMsg(null);
-    setCropRect(null);
-    setUseCrop(false);
-  }, [locale]);
+  const applyPendingPayload = useCallback(
+    async (payload: PendingImagePayload, clearWhenDone: boolean) => {
+      if (payload.loading) {
+        setDataUrl(null);
+        setSourceKind('web');
+        setSourceLabel(payload.sourceLabel ?? null);
+        setResult(null);
+        setStatus('idle');
+        setStatusMsg(t(locale, 'loadingWeb'));
+        setCropRect(null);
+        setUseCrop(false);
+        return;
+      }
+
+      if (payload.error) {
+        setDataUrl(null);
+        setStatus('error');
+        setStatusMsg(
+          payload.error.toLowerCase().includes('permission')
+            ? t(locale, 'webError')
+            : payload.error
+        );
+        if (clearWhenDone) await send({ type: MSG_CLEAR_PENDING_IMAGE });
+        return;
+      }
+
+      if (!payload.dataUrl) return;
+
+      setDataUrl(payload.dataUrl);
+      setSourceKind(payload.source);
+      setSourceLabel(payload.sourceLabel ?? null);
+      setResult(null);
+      setStatus('idle');
+      setStatusMsg(null);
+      setCropRect(null);
+      setUseCrop(false);
+      if (clearWhenDone) await send({ type: MSG_CLEAR_PENDING_IMAGE });
+    },
+    [locale]
+  );
 
   useEffect(() => {
     void (async () => {
       setLocale(await loadLocale());
       setOcrLang(await loadOcrLang());
       const pending = await send<PendingImagePayload | null>({ type: MSG_GET_PENDING_IMAGE });
-      if (pending) {
-        await loadImagePayload(pending);
-        await send({ type: MSG_CLEAR_PENDING_IMAGE });
-      }
+      if (pending) await applyPendingPayload(pending, !pending.loading);
     })();
-  }, [loadImagePayload]);
+  }, [applyPendingPayload]);
+
+  useEffect(() => {
+    const onChanged = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string
+    ) => {
+      if (areaName !== 'session' || !changes[PENDING_IMAGE_KEY]) return;
+      const next = changes[PENDING_IMAGE_KEY].newValue as PendingImagePayload | undefined;
+      if (next) void applyPendingPayload(next, !next.loading);
+    };
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => chrome.storage.onChanged.removeListener(onChanged);
+  }, [applyPendingPayload]);
+
+  useEffect(() => {
+    const el = resultRef.current;
+    if (!el || !result) return;
+
+    void chrome.storage.local.get(RESULT_TEXT_HEIGHT_KEY).then((data) => {
+      const h = data[RESULT_TEXT_HEIGHT_KEY];
+      if (typeof h === 'number' && h >= 112 && h <= 520) {
+        el.style.height = `${h}px`;
+      }
+    });
+
+    let saveTimer: ReturnType<typeof setTimeout> | undefined;
+    const ro = new ResizeObserver(() => {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        const height = el.offsetHeight;
+        if (height >= 112) {
+          void chrome.storage.local.set({ [RESULT_TEXT_HEIGHT_KEY]: height });
+        }
+      }, 250);
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      if (saveTimer) clearTimeout(saveTimer);
+    };
+  }, [result]);
 
   const onLocale = async (l: UiLocale) => {
     setLocale(l);
@@ -298,7 +361,14 @@ export default function App() {
         {result && status !== 'empty' && (
           <section className="result-block">
             <h2>{t(locale, 'result')}</h2>
-            <textarea className="result-text" readOnly value={result} rows={8} />
+            <p className="result-resize-hint">{t(locale, 'resultResizeHint')}</p>
+            <textarea
+              ref={resultRef}
+              className="result-text"
+              readOnly
+              value={result}
+              aria-label={t(locale, 'result')}
+            />
             <div className="actions row">
               <button type="button" className="btn" onClick={() => void onCopy()}>
                 {t(locale, 'copy')}

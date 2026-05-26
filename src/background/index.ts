@@ -12,6 +12,9 @@ const PANEL_WIDTH = 480;
 const PANEL_HEIGHT = 720;
 const MENU_ID = 'tfi-extract-image';
 
+/** Cached panel window id — `windows.create` must run synchronously during a user gesture. */
+let panelWindowId: number | undefined;
+
 function panelUrl(): string {
   return chrome.runtime.getURL(PANEL_PATH);
 }
@@ -22,39 +25,88 @@ async function findPanelTab(): Promise<chrome.tabs.Tab | undefined> {
   return tabs.find((t) => t.url === url);
 }
 
-export async function openOrFocusPanel(): Promise<void> {
-  const url = panelUrl();
+function rememberPanelWindow(winId: number): void {
+  panelWindowId = winId;
+  void chrome.storage.session.set({ [PANEL_WINDOW_ID_KEY]: winId });
+}
 
-  const existing = await findPanelTab();
-  if (existing?.windowId != null && existing.id != null) {
-    await chrome.windows.update(existing.windowId, { focused: true });
-    await chrome.tabs.update(existing.id, { active: true });
-    await chrome.storage.session.set({ [PANEL_WINDOW_ID_KEY]: existing.windowId });
+function createPanelWindow(url: string): void {
+  chrome.windows.create(
+    {
+      url,
+      type: 'popup',
+      width: PANEL_WIDTH,
+      height: PANEL_HEIGHT,
+      focused: true,
+    },
+    (win) => {
+      if (chrome.runtime.lastError) {
+        console.error('[TextFromImage] open panel:', chrome.runtime.lastError.message);
+        return;
+      }
+      if (win?.id != null) rememberPanelWindow(win.id);
+    }
+  );
+}
+
+/** Open/focus panel while the user-gesture token is still valid (context menu, action). */
+function openPanelDuringUserGesture(): void {
+  const url = panelUrl();
+  let createdWinId: number | undefined;
+
+  if (panelWindowId != null) {
+    chrome.windows.update(panelWindowId, { focused: true }, () => {
+      if (chrome.runtime.lastError) {
+        panelWindowId = undefined;
+        createPanelWindow(url);
+      }
+    });
+    void reconcilePanelWindow(undefined);
     return;
   }
 
-  const stored = await chrome.storage.session.get(PANEL_WINDOW_ID_KEY);
-  const staleWinId = stored[PANEL_WINDOW_ID_KEY] as number | undefined;
-  if (typeof staleWinId === 'number') {
+  chrome.windows.create(
+    {
+      url,
+      type: 'popup',
+      width: PANEL_WIDTH,
+      height: PANEL_HEIGHT,
+      focused: true,
+    },
+    (win) => {
+      if (chrome.runtime.lastError) {
+        console.error('[TextFromImage] open panel:', chrome.runtime.lastError.message);
+        return;
+      }
+      if (win?.id != null) {
+        createdWinId = win.id;
+        rememberPanelWindow(win.id);
+      }
+      void reconcilePanelWindow(createdWinId);
+    }
+  );
+}
+
+async function reconcilePanelWindow(createdWinId: number | undefined): Promise<void> {
+  const existing = await findPanelTab();
+  if (existing?.windowId == null || existing.id == null) return;
+
+  panelWindowId = existing.windowId;
+  await chrome.storage.session.set({ [PANEL_WINDOW_ID_KEY]: existing.windowId });
+  await chrome.windows.update(existing.windowId, { focused: true });
+  await chrome.tabs.update(existing.id, { active: true });
+
+  if (createdWinId != null && createdWinId !== existing.windowId) {
     try {
-      await chrome.windows.get(staleWinId);
-      await chrome.windows.update(staleWinId, { focused: true });
-      return;
+      await chrome.windows.remove(createdWinId);
     } catch {
-      await chrome.storage.session.remove(PANEL_WINDOW_ID_KEY);
+      /* duplicate popup already closed */
     }
   }
+}
 
-  const win = await chrome.windows.create({
-    url,
-    type: 'popup',
-    width: PANEL_WIDTH,
-    height: PANEL_HEIGHT,
-    focused: true,
-  });
-  if (win?.id != null) {
-    await chrome.storage.session.set({ [PANEL_WINDOW_ID_KEY]: win.id });
-  }
+export async function openOrFocusPanel(): Promise<void> {
+  openPanelDuringUserGesture();
 }
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -66,21 +118,17 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   return `data:${blob.type || 'image/png'};base64,${b64}`;
 }
 
-async function fetchImageAsPending(srcUrl: string, pageUrl: string): Promise<PendingImagePayload> {
-  let originPattern: string | null = null;
+function originPatternForImageUrl(srcUrl: string): string | null {
   try {
     const u = new URL(srcUrl);
-    originPattern = `${u.origin}/*`;
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    return `${u.origin}/*`;
   } catch {
-    throw new Error('Invalid image URL');
+    return null;
   }
+}
 
-  const granted = await chrome.permissions.contains({ origins: [originPattern] });
-  if (!granted) {
-    const ok = await chrome.permissions.request({ origins: [originPattern] });
-    if (!ok) throw new Error('Host permission denied');
-  }
-
+async function fetchImageAsPending(srcUrl: string, pageUrl: string): Promise<PendingImagePayload> {
   const res = await fetch(srcUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const blob = await res.blob();
@@ -94,10 +142,73 @@ async function fetchImageAsPending(srcUrl: string, pageUrl: string): Promise<Pen
   };
 }
 
-async function queueWebImage(srcUrl: string, pageUrl: string): Promise<void> {
-  const pending = await fetchImageAsPending(srcUrl, pageUrl);
-  await chrome.storage.session.set({ [PENDING_IMAGE_KEY]: pending });
-  await openOrFocusPanel();
+function loadingPayload(pageUrl: string): PendingImagePayload {
+  return {
+    dataUrl: '',
+    mime: '',
+    source: 'web',
+    sourceLabel: pageUrl,
+    loading: true,
+  };
+}
+
+async function setPending(payload: PendingImagePayload): Promise<void> {
+  await chrome.storage.session.set({ [PENDING_IMAGE_KEY]: payload });
+}
+
+function queueWebImageFromContextMenu(srcUrl: string, pageUrl: string): void {
+  openPanelDuringUserGesture();
+  void setPending(loadingPayload(pageUrl));
+
+  const originPattern = originPatternForImageUrl(srcUrl);
+
+  const runFetch = (): void => {
+    void (async () => {
+      try {
+        await setPending(await fetchImageAsPending(srcUrl, pageUrl));
+      } catch (err) {
+        console.error('[TextFromImage] fetch image:', err);
+        await setPending({
+          dataUrl: '',
+          mime: '',
+          source: 'web',
+          sourceLabel: pageUrl,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    })();
+  };
+
+  if (!originPattern) {
+    runFetch();
+    return;
+  }
+
+  // Must invoke request synchronously in the context-menu handler (before any await).
+  chrome.permissions.request({ origins: [originPattern] }, (granted) => {
+    if (chrome.runtime.lastError) {
+      console.error('[TextFromImage] permission:', chrome.runtime.lastError.message);
+      void setPending({
+        dataUrl: '',
+        mime: '',
+        source: 'web',
+        sourceLabel: pageUrl,
+        error: 'Host permission denied',
+      });
+      return;
+    }
+    if (!granted) {
+      void setPending({
+        dataUrl: '',
+        mime: '',
+        source: 'web',
+        sourceLabel: pageUrl,
+        error: 'Host permission denied',
+      });
+      return;
+    }
+    runFetch();
+  });
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -108,33 +219,22 @@ chrome.runtime.onInstalled.addListener(() => {
       contexts: ['image'],
     });
   });
+  void chrome.storage.session.get(PANEL_WINDOW_ID_KEY).then((stored) => {
+    const id = stored[PANEL_WINDOW_ID_KEY];
+    if (typeof id === 'number') panelWindowId = id;
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== MENU_ID || !info.srcUrl) return;
-  void (async () => {
-    try {
-      await queueWebImage(info.srcUrl!, tab?.url ?? info.srcUrl!);
-    } catch (err) {
-      console.error('[TextFromImage] context menu:', err);
-      await chrome.storage.session.set({
-        [PENDING_IMAGE_KEY]: {
-          dataUrl: '',
-          mime: '',
-          source: 'web',
-          error: err instanceof Error ? err.message : String(err),
-        } satisfies PendingImagePayload,
-      });
-      await openOrFocusPanel();
-    }
-  })();
+  queueWebImageFromContextMenu(info.srcUrl, tab?.url ?? info.srcUrl);
 });
 
 chrome.runtime.onMessage.addListener((message: TfiMessage, _sender, sendResponse) => {
   void (async () => {
     switch (message.type) {
       case MSG_OPEN_PANEL:
-        await openOrFocusPanel();
+        openPanelDuringUserGesture();
         sendResponse({ ok: true });
         break;
       case MSG_GET_PENDING_IMAGE: {
@@ -154,6 +254,7 @@ chrome.runtime.onMessage.addListener((message: TfiMessage, _sender, sendResponse
 });
 
 chrome.windows.onRemoved.addListener((windowId) => {
+  if (panelWindowId === windowId) panelWindowId = undefined;
   void (async () => {
     const stored = await chrome.storage.session.get(PANEL_WINDOW_ID_KEY);
     if (stored[PANEL_WINDOW_ID_KEY] === windowId) {

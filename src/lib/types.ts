@@ -7,6 +7,7 @@ export type PendingImagePayload = {
   source: 'file' | 'web' | 'clipboard';
   sourceLabel?: string;
   error?: string;
+  loading?: boolean;
 };
 
 export type CropRect = {
