@@ -13,7 +13,7 @@ import {
   MSG_CLEAR_PENDING_IMAGE,
   MSG_GET_PENDING_IMAGE,
 } from '../lib/messages';
-import { PENDING_IMAGE_KEY, RESULT_TEXT_HEIGHT_KEY } from '../lib/storageKeys';
+import { PENDING_IMAGE_KEY, RESULT_TEXT_HEIGHT_KEY, IMAGE_PREVIEW_HEIGHT_KEY } from '../lib/storageKeys';
 import {
   loadLocale,
   saveLocale,
@@ -28,6 +28,7 @@ function send<T>(msg: { type: string }): Promise<T> {
 export default function App() {
   const fileRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLTextAreaElement>(null);
+  const previewShellRef = useRef<HTMLDivElement>(null);
   const [locale, setLocale] = useState<UiLocale>('es');
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
@@ -129,6 +130,34 @@ export default function App() {
       if (saveTimer) clearTimeout(saveTimer);
     };
   }, [result]);
+
+  useEffect(() => {
+    const el = previewShellRef.current;
+    if (!el || !dataUrl) return;
+
+    void chrome.storage.local.get(IMAGE_PREVIEW_HEIGHT_KEY).then((data) => {
+      const h = data[IMAGE_PREVIEW_HEIGHT_KEY];
+      if (typeof h === 'number' && h >= 100 && h <= 480) {
+        el.style.height = `${h}px`;
+      }
+    });
+
+    let saveTimer: ReturnType<typeof setTimeout> | undefined;
+    const ro = new ResizeObserver(() => {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        const height = el.offsetHeight;
+        if (height >= 100) {
+          void chrome.storage.local.set({ [IMAGE_PREVIEW_HEIGHT_KEY]: height });
+        }
+      }, 250);
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      if (saveTimer) clearTimeout(saveTimer);
+    };
+  }, [dataUrl]);
 
   const onLocale = async (l: UiLocale) => {
     setLocale(l);
@@ -304,7 +333,10 @@ export default function App() {
               </p>
             )}
             <p className="hint subtle">{t(locale, 'cropHint')}</p>
-            <CropCanvas dataUrl={dataUrl} cropRect={cropRect} onCropChange={handleCropChange} />
+            <div ref={previewShellRef} className="image-preview-shell">
+              <CropCanvas dataUrl={dataUrl} cropRect={cropRect} onCropChange={handleCropChange} />
+            </div>
+            <p className="hint subtle">{t(locale, 'imagePreviewResizeHint')}</p>
             <div className="actions row">
               <button
                 type="button"

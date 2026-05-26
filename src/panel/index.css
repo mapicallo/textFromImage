@@ -123,6 +123,25 @@ body {
 
 .source-line { margin: 0 0 0.35rem; word-break: break-all; }
 
+.image-preview-shell {
+  width: 100%;
+  min-height: 7rem;
+  max-height: min(28rem, 55vh);
+  height: 14rem;
+  resize: vertical;
+  overflow: auto;
+  margin: 0.5rem 0 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(26, 35, 50, 0.35);
+}
+
+.image-preview-shell .crop-wrap {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
 .crop-wrap {
   position: relative;
   margin: 0.5rem 0;
