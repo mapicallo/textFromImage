@@ -1,6 +1,6 @@
 {
   "name": "textfromimage-extension",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "TextFromImage — extract text from images locally (web and files). By AI4Context.",
   "type": "module",
   "scripts": {
@@ -10,6 +10,10 @@
     "prebuild": "npm run icons && npm run tesseract",
     "build": "vite build",
     "pack": "npm run build && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-zip.ps1",
+    "store:screenshots": "node scripts/generate-store-screenshots.mjs",
+    "store:tiles": "node scripts/prepare-store-tiles.mjs",
+    "store:graphics": "npm run store:screenshots && npm run store:tiles",
+    "store:all": "npm run store:graphics && npm run pack",
     "preview": "vite preview"
   },
   "license": "ISC",

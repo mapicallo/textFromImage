@@ -1,12 +1,13 @@
 import { defineManifest } from '@crxjs/vite-plugin';
+import pkg from './package.json';
 
-const VERSION = '0.1.0';
+const VERSION = pkg.version;
 
 export default defineManifest({
   manifest_version: 3,
-  name: `TextFromImage ${VERSION}`,
+  name: 'TextFromImage - Extract text from images locally',
   description:
-    'Extract readable text from images on web pages or local files. Optional crop, local OCR, copy or download. By AI4Context.',
+    'Copy text from web images, files & clipboard. Local OCR (EN+ES), optional crop, copy or download. No cloud. By AI4Context.',
   version: VERSION,
   icons: {
     16: 'icons/icon-16.png',
@@ -15,7 +16,7 @@ export default defineManifest({
     128: 'icons/icon-128.png',
   },
   action: {
-    default_title: `TextFromImage ${VERSION}`,
+    default_title: 'TextFromImage — open panel',
     default_popup: 'src/action/index.html',
     default_icon: {
       16: 'icons/icon-16.png',

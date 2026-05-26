@@ -1,0 +1,20 @@
+TextFromImage helps you copy readable text from images on your device—without sending them to the cloud.
+
+Open the floating panel from the toolbar icon: drop an image, paste from the clipboard (Ctrl+V), or pick a local file. Right-click any image on a web page and choose Extract text from image (TextFromImage). Optionally drag on the preview to crop a text block, then extract. Copy the result or download a .txt file.
+
+What you get
+• Local OCR with Tesseract (English + Spanish bundled—no language picker needed).
+• Web images via context menu (optional per-site permission when required).
+• Resizable image preview and result areas.
+• UI in Spanish or English.
+
+What it does not do
+• No cloud OCR APIs—processing stays in your browser.
+• No developer backend; images and extracted text are not uploaded to AI4Context servers.
+• It does not translate text (planned as a separate extension).
+
+Tips
+• For book covers or posters, crop tightly to the text block before extracting.
+• First OCR run may take a few seconds while language models load locally.
+
+Part of the AI4Context ecosystem — ai4context.com
